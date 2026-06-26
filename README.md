@@ -8,7 +8,7 @@
 
 ---
 
-## 🚀 Fitur Utama
+## Fitur Utama
 
 1. **Dashboard & Ringkasan Harian (Home)**
    - Visualisasi target dan pencapaian nutrisi harian (kalori, karbohidrat, protein, lemak, dan air).
@@ -47,7 +47,7 @@
 
 ---
 
-## 🛠️ Teknologi yang Digunakan
+## Teknologi yang Digunakan
 
 - **Frontend Core:** React 19 & JavaScript (ES6+)
 - **Build Tool:** Vite
@@ -58,7 +58,7 @@
 
 ---
 
-## 📁 Struktur Folder Proyek
+## Struktur Folder Proyek
 
 Struktur direktori dirancang dengan pendekatan modular berbasis komponen dan pemisahan tanggung jawab (*separation of concerns*) yang jelas:
 
@@ -121,7 +121,7 @@ marko/
 
 ---
 
-## 💻 Panduan Menjalankan Proyek Secara Lokal
+## Panduan Menjalankan Proyek Secara Lokal
 
 Ikuti langkah-langkah di bawah ini untuk memasang dan menjalankan proyek Marko di komputer Anda:
 
@@ -169,14 +169,14 @@ npm run preview
 
 ---
 
-## 🌐 Link Deployment Aplikasi
+## Link Deployment Aplikasi
 
 Aplikasi Marko telah dideploy secara online dan dapat diakses melalui tautan berikut:
-👉 **[Link Deploy Aplikasi Marko](https://marko-health.vercel.app/)** *(Silakan sesuaikan dengan link deploy resmi Anda)*
+👉 **[Link Deploy Aplikasi Marko](https://marko-one.vercel.app/)**
 
 ---
 
-## 🔒 Variabel Lingkungan (Environment Variables)
+## Variabel Lingkungan (Environment Variables)
 
 Aplikasi ini mendukung beberapa variabel lingkungan yang dapat dikonfigurasi melalui file `.env`. Berikut adalah daftarnya:
 
