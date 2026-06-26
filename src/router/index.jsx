@@ -24,9 +24,9 @@ export default createBrowserRouter([{
   path: ROUTES.HOME,
   element: <RootLayout />,
   children: [
-    { index: true,                      element: <Home /> },
-    { path: ROUTES.RECIPES,             element: <RecipeList /> },
-    { path: ROUTES.RECIPE_DETAIL,       element: <RecipeDetail /> },
+    { index: true,                      element: P(Home) },
+    { path: ROUTES.RECIPES,             element: P(RecipeList) },
+    { path: ROUTES.RECIPE_DETAIL,       element: P(RecipeDetail) },
     { path: ROUTES.MY_RECIPES,          element: P(MyRecipes) },
     { path: ROUTES.MY_RECIPES_CREATE,   element: P(RecipeFormPage) },
     { path: ROUTES.MY_RECIPES_EDIT,     element: P(RecipeFormPage) },

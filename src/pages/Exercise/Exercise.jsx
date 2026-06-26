@@ -121,35 +121,33 @@ function LogItem({ log, onDelete }) {
   );
 }
 
+
 // ── Add Exercise Modal ────────────────────────────────────────────────────────
 
-const EMPTY_FORM = { name: '', type: 'Kardio', duration: '', calories: '', exerciseId: '' };
+const EMPTY_FORM = { name: '', type: 'Kardio', duration: '', exerciseId: '' };
 
 function AddExerciseModal({ isOpen, onClose, onLog, userWeight }) {
-  const [step,      setStep]      = useState('pick');   // 'pick' | 'detail'
-  const [selected,  setSelected]  = useState(null);     // preset or null for custom
-  const [typeFilter,setTypeFilter]= useState('Semua');
-  const [form,      setForm]      = useState(EMPTY_FORM);
-  const [errors,    setErrors]    = useState({});
+  const [step,        setStep]        = useState('pick');
+  const [selected,    setSelected]    = useState(null);
+  const [typeFilter,  setTypeFilter]  = useState('Semua');
+  const [form,        setForm]        = useState(EMPTY_FORM);
+  const [errors,      setErrors]      = useState({});
 
   const weight = userWeight ?? 65;
 
-  // Auto-recalculate calories when duration changes and a preset is selected
+  const dur = Number(form.duration);
+  const autoCalories = selected && dur > 0
+    ? estimateCal(selected.met, dur, weight)
+    : null;
+
   const handleDurationChange = (val) => {
-    const dur = Number(val);
-    const cal = selected ? estimateCal(selected.met, dur, weight) : '';
-    setForm((p) => ({ ...p, duration: val, calories: cal > 0 ? String(cal) : '' }));
+    setForm((p) => ({ ...p, duration: val }));
+    setErrors((p) => ({ ...p, duration: '' }));
   };
 
   const selectPreset = (preset) => {
     setSelected(preset);
-    setForm({
-      name:       preset.name,
-      type:       preset.type,
-      duration:   '',
-      calories:   '',
-      exerciseId: preset.id,
-    });
+    setForm({ name: preset.name, type: preset.type, duration: '', exerciseId: preset.id });
     setStep('detail');
   };
 
@@ -161,9 +159,8 @@ function AddExerciseModal({ isOpen, onClose, onLog, userWeight }) {
 
   const validate = () => {
     const e = {};
-    if (!form.name.trim())    e.name     = 'Nama wajib diisi.';
-    if (!form.duration || Number(form.duration) <= 0)
-                              e.duration = 'Durasi wajib diisi.';
+    if (!form.name.trim()) e.name = 'Nama wajib diisi.';
+    if (!form.duration || dur <= 0) e.duration = 'Durasi wajib diisi (menit > 0).';
     return e;
   };
 
@@ -174,24 +171,19 @@ function AddExerciseModal({ isOpen, onClose, onLog, userWeight }) {
       exerciseId:     form.exerciseId || 'custom',
       name:           form.name.trim(),
       type:           form.type,
-      duration:       Number(form.duration),
-      caloriesBurned: Number(form.calories) || 0,
+      duration:       dur,
+      caloriesBurned: autoCalories ?? 0,
     });
     handleClose();
   };
 
   const handleClose = () => {
-    setStep('pick');
-    setSelected(null);
-    setForm(EMPTY_FORM);
-    setErrors({});
-    setTypeFilter('Semua');
+    setStep('pick'); setSelected(null); setForm(EMPTY_FORM);
+    setErrors({}); setTypeFilter('Semua');
     onClose();
   };
 
-  const filtered = typeFilter === 'Semua'
-    ? PRESETS
-    : PRESETS.filter((p) => p.type === typeFilter);
+  const filtered = typeFilter === 'Semua' ? PRESETS : PRESETS.filter((p) => p.type === typeFilter);
 
   if (!isOpen) return null;
 
@@ -205,10 +197,8 @@ function AddExerciseModal({ isOpen, onClose, onLog, userWeight }) {
         <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
           <div className="flex items-center gap-2">
             {step === 'detail' && (
-              <button
-                onClick={() => setStep('pick')}
-                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 text-sm font-semibold transition-colors"
-              >
+              <button onClick={() => setStep('pick')}
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 text-sm font-semibold transition-colors">
                 ←
               </button>
             )}
@@ -216,10 +206,8 @@ function AddExerciseModal({ isOpen, onClose, onLog, userWeight }) {
               {step === 'pick' ? 'Pilih Olahraga' : (selected ? selected.name : 'Olahraga Kustom')}
             </h2>
           </div>
-          <button
-            onClick={handleClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
-          >
+          <button onClick={handleClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition-colors">
             ✕
           </button>
         </div>
@@ -227,19 +215,25 @@ function AddExerciseModal({ isOpen, onClose, onLog, userWeight }) {
         {/* ── Step 1: Pick ──────────────────────────────────────────── */}
         {step === 'pick' && (
           <>
+            {/* Info MET singkat */}
+            <div className="mx-5 mb-3 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 flex gap-2 items-start flex-shrink-0">
+              <span className="text-blue-400 text-sm mt-0.5">ℹ️</span>
+              <p className="text-[11px] text-blue-600 leading-relaxed">
+                Nilai <strong>MET</strong> (Metabolic Equivalent of Task) menunjukkan intensitas olahraga.
+                Makin tinggi MET, makin banyak kalori yang dibakar per menit.
+              </p>
+            </div>
+
             {/* Type filter */}
             <div className="px-5 pb-3 flex-shrink-0">
               <div className="flex gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
                 {['Semua', ...EXERCISE_TYPES].map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setTypeFilter(t)}
+                  <button key={t} onClick={() => setTypeFilter(t)}
                     className={`flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
                       typeFilter === t
                         ? 'bg-green-500 text-white border-green-500'
                         : 'bg-white text-gray-600 border-gray-200 hover:border-green-300'
-                    }`}
-                  >
+                    }`}>
                     {t}
                   </button>
                 ))}
@@ -252,11 +246,8 @@ function AddExerciseModal({ isOpen, onClose, onLog, userWeight }) {
                 {filtered.map((preset) => {
                   const c = TYPE_COLOR[preset.type];
                   return (
-                    <button
-                      key={preset.id}
-                      onClick={() => selectPreset(preset)}
-                      className={`flex items-center gap-2.5 p-3 rounded-xl border ${c.border} ${c.bg} hover:opacity-80 transition-opacity text-left`}
-                    >
+                    <button key={preset.id} onClick={() => selectPreset(preset)}
+                      className={`flex items-center gap-2.5 p-3 rounded-xl border ${c.border} ${c.bg} hover:opacity-80 transition-opacity text-left`}>
                       <span className="text-xl flex-shrink-0">{preset.icon}</span>
                       <div className="min-w-0">
                         <p className={`text-xs font-semibold ${c.text} truncate`}>{preset.name}</p>
@@ -266,12 +257,8 @@ function AddExerciseModal({ isOpen, onClose, onLog, userWeight }) {
                   );
                 })}
               </div>
-
-              {/* Custom option */}
-              <button
-                onClick={selectCustom}
-                className="w-full flex items-center gap-2.5 p-3 rounded-xl border border-dashed border-gray-300 hover:border-green-400 hover:bg-green-50 transition-colors text-left"
-              >
+              <button onClick={selectCustom}
+                className="w-full flex items-center gap-2.5 p-3 rounded-xl border border-dashed border-gray-300 hover:border-green-400 hover:bg-green-50 transition-colors text-left">
                 <span className="text-xl">➕</span>
                 <div>
                   <p className="text-xs font-semibold text-gray-600">Olahraga Lainnya</p>
@@ -287,14 +274,12 @@ function AddExerciseModal({ isOpen, onClose, onLog, userWeight }) {
           <>
             <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-4">
 
-              {/* Name (editable even for preset) */}
+              {/* Name */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1.5">
                   Nama Olahraga <span className="text-red-400">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={form.name}
+                <input type="text" value={form.name}
                   onChange={(e) => { setForm((p) => ({ ...p, name: e.target.value })); setErrors((p) => ({ ...p, name: '' })); }}
                   placeholder="Contoh: Lari pagi 5K"
                   className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-1 transition ${
@@ -311,15 +296,12 @@ function AddExerciseModal({ isOpen, onClose, onLog, userWeight }) {
                   {EXERCISE_TYPES.map((t) => {
                     const c = TYPE_COLOR[t];
                     return (
-                      <button
-                        key={t}
-                        onClick={() => setForm((p) => ({ ...p, type: t }))}
+                      <button key={t} onClick={() => setForm((p) => ({ ...p, type: t }))}
                         className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
                           form.type === t
                             ? `${c.pill} text-white border-transparent`
                             : `bg-white ${c.text} ${c.border} hover:opacity-80`
-                        }`}
-                      >
+                        }`}>
                         {t}
                       </button>
                     );
@@ -333,11 +315,8 @@ function AddExerciseModal({ isOpen, onClose, onLog, userWeight }) {
                   Durasi <span className="text-red-400">*</span>
                 </label>
                 <div className="relative">
-                  <input
-                    type="number"
-                    min="1"
-                    value={form.duration}
-                    onChange={(e) => { handleDurationChange(e.target.value); setErrors((p) => ({ ...p, duration: '' })); }}
+                  <input type="number" min="1" value={form.duration}
+                    onChange={(e) => handleDurationChange(e.target.value)}
                     placeholder="30"
                     className={`w-full px-3 py-2.5 pr-16 border rounded-xl text-sm focus:outline-none focus:ring-1 transition ${
                       errors.duration ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:ring-green-300 focus:border-green-400'
@@ -348,41 +327,76 @@ function AddExerciseModal({ isOpen, onClose, onLog, userWeight }) {
                 {errors.duration && <p className="text-xs text-red-500 mt-1">{errors.duration}</p>}
               </div>
 
-              {/* Calories burned */}
+              {/* ── Calorie estimate card (auto) ── */}
+              {selected && dur > 0 && autoCalories !== null && (
+                <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] text-orange-500 font-semibold uppercase tracking-wide mb-0.5">
+                        🔥 Estimasi Kalori Dibakar
+                      </p>
+                      <p className="text-3xl font-black text-orange-600">
+                        {autoCalories.toLocaleString('id-ID')}
+                        <span className="text-base font-medium ml-1">kkal</span>
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <span className="text-xs bg-orange-100 text-orange-600 font-semibold px-2 py-0.5 rounded-full">
+                        Otomatis
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Formula breakdown */}
+                  <div className="mt-3 bg-white/60 rounded-xl px-3 py-2.5">
+                    <p className="text-[10px] text-gray-500 font-medium mb-1">Formula yang digunakan:</p>
+                    <p className="text-[11px] text-gray-700 font-mono">
+                      MET ({selected.met}) × BB ({weight} kg) × ({dur} mnt ÷ 60)
+                    </p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      = {selected.met} × {weight} × {(dur / 60).toFixed(2)} ≈{' '}
+                      <strong className="text-orange-600">{autoCalories} kkal</strong>
+                    </p>
+                  </div>
+
+                  <p className="text-[10px] text-gray-400 mt-2 leading-relaxed">
+                    Estimasi untuk berat badan <strong>{weight} kg</strong>.
+                    {userWeight == null && ' Set berat badan di Profil untuk hasil lebih akurat.'}
+                  </p>
+                </div>
+              )}
+
+              {/* Kalori Dibakar — read only */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1.5">
                   Kalori Dibakar
-                  {selected && form.duration && (
-                    <span className="text-gray-400 font-normal ml-1">
-                      (estimasi untuk BB {weight} kg)
-                    </span>
-                  )}
                 </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.calories}
-                    onChange={(e) => setForm((p) => ({ ...p, calories: e.target.value }))}
-                    placeholder={selected && form.duration ? String(estimateCal(selected.met, Number(form.duration), weight)) : '150'}
-                    className="w-full px-3 py-2.5 pr-12 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-green-300 focus:border-green-400 transition"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">kkal</span>
+                <div className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
+                  autoCalories != null
+                    ? 'bg-orange-50 border-orange-200'
+                    : 'bg-gray-50 border-gray-200'
+                }`}>
+                  <span className={`text-sm font-bold ${autoCalories != null ? 'text-orange-600' : 'text-gray-400'}`}>
+                    {autoCalories != null
+                      ? `${autoCalories.toLocaleString('id-ID')} kkal`
+                      : '— isi durasi terlebih dahulu'}
+                  </span>
+                  <span className="text-[10px] font-semibold bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">
+                    Otomatis
+                  </span>
                 </div>
-                {selected && (
-                  <p className="text-[11px] text-gray-400 mt-1">
-                    💡 Dikosongkan = pakai estimasi otomatis saat disimpan.
-                  </p>
-                )}
+                <p className="text-[10px] text-gray-400 mt-1.5">
+                  Dihitung otomatis berdasarkan nilai MET, berat badan, dan durasi.
+                </p>
               </div>
+
+
             </div>
 
             {/* Save button */}
             <div className="px-5 pb-5 pt-3 border-t border-gray-50 flex-shrink-0">
-              <button
-                onClick={handleSave}
-                className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors text-sm"
-              >
+              <button onClick={handleSave}
+                className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors text-sm">
                 Simpan Olahraga
               </button>
             </div>
